@@ -217,7 +217,7 @@ A full list of shortcuts is available in the config panel.
 
 ## 📝 License
 
-Copyright © 2025 [CrashServer](https://github.com/CrashServer).
+Copyright © 2025-2026 [CrashServer](https://github.com/CrashServer).
 
 This project is MIT licensed.
 
