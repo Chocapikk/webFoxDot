@@ -1,10 +1,11 @@
 import asyncio
 import json
-import threading
-import websockets
-from time import time, sleep
 import os
 import re
+import threading
+from time import sleep, time
+
+import websockets
 
 loops = Samples.loops
 
@@ -20,285 +21,262 @@ try:
 except Exception:
     _SYNTH_DIR = os.path.join(FOXDOT_ROOT, "osc", "scsyndef")
 
+_SYNTH_ARGS_IGNORE = {
+    "amp",
+    "sus",
+    "gate",
+    "pan",
+    "freq",
+    "mul",
+    "bus",
+    "atk",
+    "decay",
+    "rel",
+    "level",
+    "peak",
+    "blur",
+    "beat_dur",
+    "buf",
+    "vib",
+    "fmod",
+}
+
 
 class WebFoxDotPanelWs:
     def __init__(self, ip="localhost", port=20000):
-        self.isRunning = False
+        self.is_running = False
         self.ip = ip
         self.port = port
+        self.ws_clients = set()
+        self.player_counter = {}
+        self.time_init = time()
 
-        # OSC Server
-        self.oscServer = ThreadingOSCServer((self.ip, 2887))
-        self.oscServer.addDefaultHandlers()
-        self.oscServer.addMsgHandler("/CPU", self.receiveCpu)
-        self.oscThread = threading.Thread(
-            target=self.oscServer.serve_forever, daemon=True
-        )
-        self.oscThread.start()
-        # websocket server
-        self.wsClients = set()
-        self.websocket_started_event = threading.Event()
-        self.websocket_thread = threading.Thread(
-            target=self.start_websocket_server, daemon=True
-        )
-        self.websocket_thread.start()
-        self.websocket_started_event.wait()
-        # bpm send
-        self.sendBpm_thread = threading.Thread(
-            target=self.send_bpm_periodically, daemon=True
-        )
-        self.sendBpm_thread.start()
+        self.bpm_time = 0.2
+        self.beat_time = 0.1
+        self.player_time = 1.0
+        self.chrono_time = 1.0
 
-        self.bpmTime = 0.2  # time cycle send Scale,Root
-        self.beatTime = 0.1  # time cycle send beat
-        self.plyTime = 1.0  # time cycle send player
-        self.chronoTime = 1.0  # time cycle send chrono
+        self._start_osc_server()
+        self._start_websocket()
+        self._start_bpm_sender()
 
-        self.playerCounter = {}
-        self.timeInit = time()
-
-        self.threadScale = threading.Thread(target=self.sendScale, daemon=True)
-        self.threadRoot = threading.Thread(target=self.sendRoot, daemon=True)
-        self.threadBeat = threading.Thread(target=self.sendBeat, daemon=True)
-        self.threadPlayer = threading.Thread(target=self.sendPlayer, daemon=True)
-        self.threadChrono = threading.Thread(target=self.sendChrono, daemon=True)
+        self._periodic_threads = [
+            threading.Thread(
+                target=self._send_loop,
+                args=("scale", self._get_scale, self.bpm_time * 10),
+                daemon=True,
+            ),
+            threading.Thread(
+                target=self._send_loop,
+                args=("root", self._get_root, self.bpm_time * 10),
+                daemon=True,
+            ),
+            threading.Thread(
+                target=self._send_loop,
+                args=("beat", self._get_beat, self.beat_time),
+                daemon=True,
+            ),
+            threading.Thread(target=self._send_player, daemon=True),
+            threading.Thread(
+                target=self._send_loop,
+                args=("chrono", self._get_chrono, self.chrono_time),
+                daemon=True,
+            ),
+        ]
 
         self.start()
 
-    def receiveCpu(self, address, tags, contents, source):
-        """receive CPU usage from SC by OSC and send it to websocket"""
+    def _start_osc_server(self):
+        self._osc_server = ThreadingOSCServer((self.ip, 2887))
+        self._osc_server.addDefaultHandlers()
+        self._osc_server.addMsgHandler("/CPU", self._receive_cpu)
+        threading.Thread(target=self._osc_server.serve_forever, daemon=True).start()
+
+    def _start_websocket(self):
+        self._ws_event = threading.Event()
+        threading.Thread(target=self._run_ws_server, daemon=True).start()
+        self._ws_event.wait()
+
+    def _start_bpm_sender(self):
+        threading.Thread(target=self._send_bpm_periodically, daemon=True).start()
+
+    def _receive_cpu(self, _address, _tags, contents, _source):
         cpu = round(float(contents[0]), 2)
         if cpu:
-            asyncio.run(self.sendWebsocket(json.dumps({"type": "cpu", "cpu": cpu})))
+            asyncio.run(self._send_ws(json.dumps({"type": "cpu", "cpu": cpu})))
 
-    async def sendWsServer(self, websocket):
-        self.wsClients.add(websocket)
+    async def _handle_ws_client(self, websocket):
+        self.ws_clients.add(websocket)
         try:
             async for message in websocket:
-                await asyncio.gather(
-                    *[client.send(message) for client in self.wsClients]
-                )
+                await asyncio.gather(*[c.send(message) for c in self.ws_clients])
                 data = json.loads(message)
                 if data["type"] == "get_autocomplete":
-                    await self.sendFoxdotAutocomplete()
+                    await self._send_autocomplete()
         except websockets.ConnectionClosed:
             pass
         finally:
-            self.wsClients.remove(websocket)
+            self.ws_clients.remove(websocket)
 
-    async def mainWebsocket(self):
-        """The websocket server"""
-        async with websockets.serve(self.sendWsServer, self.ip, self.port):
-            self.websocket_started_event.set()
-            await asyncio.get_running_loop().create_future()  # run forever
+    async def _ws_main(self):
+        async with websockets.serve(self._handle_ws_client, self.ip, self.port):
+            self._ws_event.set()
+            await asyncio.get_running_loop().create_future()
 
-    def start_websocket_server(self):
-        """For using threading"""
+    def _run_ws_server(self):
         print(f"Start FoxDot WebSocket server at ws://{self.ip}:{self.port}")
-        asyncio.run(self.mainWebsocket())
+        asyncio.run(self._ws_main())
 
-    async def sendWebsocket(self, msg=""):
-        """Send websocket msg to websocket server"""
+    async def _send_ws(self, msg=""):
         try:
-            # send message as json format
             uri = f"ws://{self.ip}:{self.port}"
-            async with websockets.connect(uri) as websocket:
-                await websocket.send(msg)
+            async with websockets.connect(uri) as ws:
+                await ws.send(msg)
         except Exception as e:
             print(f"Error sending websocket message: {e}")
 
-    def send_bpm_periodically(self):
-        """Send bpm to websocket server every second"""
+    def _send_bpm_periodically(self):
         while True:
             bpm = int(Clock.get_bpm())
-            asyncio.run(self.sendWebsocket(json.dumps({"type": "bpm", "bpm": bpm})))
+            asyncio.run(self._send_ws(json.dumps({"type": "bpm", "bpm": bpm})))
             sleep(60 / bpm)
 
-    async def sendFoxdotAutocomplete(self):
-        """Send FoxDot autocomplete data to websocket server"""
-        fxList = await self.sendFxDict()
-        synthList = await self.sendSynthList()
-        combined_message = json.dumps(
+    # --- Data getters for periodic sends ---
+
+    def _get_scale(self):
+        return {"type": "scale", "scale": str(Scale.default.name)}
+
+    def _get_root(self):
+        return {"type": "root", "root": str(Root.default)}
+
+    def _get_beat(self):
+        return {"type": "beat", "beat": Clock.beat}
+
+    def _get_chrono(self):
+        return {"type": "chrono", "chrono": time() - self.time_init}
+
+    def _send_loop(self, name, getter, interval):
+        try:
+            while self.is_running:
+                asyncio.run(self._send_ws(json.dumps(getter())))
+                sleep(interval)
+        except Exception:
+            pass
+
+    def _send_player(self):
+        try:
+            while self.is_running:
+                self._update_player_counter()
+                solo_players = [p.name for p in Clock.solo.data]
+                player_list = [
+                    json.dumps(
+                        {
+                            "player": k.name,
+                            "name": k.filename
+                            if k.synthdef in ("loop", "stretch")
+                            else k.synthdef,
+                            "duration": f"{divmod(v, 60)[0]:02d}:{divmod(v, 60)[1]:02d}",
+                            "solo": k.name in solo_players,
+                        }
+                    )
+                    for k, v in self.player_counter.items()
+                ]
+                asyncio.run(
+                    self._send_ws(
+                        json.dumps({"type": "players", "players": player_list})
+                    )
+                )
+                sleep(self.player_time)
+        except Exception:
+            pass
+
+    def _update_player_counter(self):
+        try:
+            playing = Clock.playing
+            for p in playing:
+                self.player_counter[p] = self.player_counter.get(p, 0) + 1
+            for k in [k for k in self.player_counter if k not in playing]:
+                del self.player_counter[k]
+        except Exception as err:
+            print(f"_update_player_counter error: {err}")
+
+    # --- Autocomplete ---
+
+    async def _send_autocomplete(self):
+        fx_list = await self._get_fx_list()
+        synth_list = await self._get_synth_list()
+        msg = json.dumps(
             {
                 "type": "autocomplete",
                 "autocomplete": {
                     "loopList": loops,
-                    "fxList": fxList,
-                    "synthList": synthList,
+                    "fxList": fx_list,
+                    "synthList": synth_list,
                 },
             }
         )
-        await self.sendWebsocket(combined_message)
+        await self._send_ws(msg)
 
-    async def sendFxDict(self):
-        """Send fx list to websocket server"""
-        fx_json_list = []
+    async def _get_fx_list(self):
+        result = []
         for fx_name in FxList.keys():
-            fxDefault = FxList[fx_name].defaults
-            filtered_fx = {
+            defaults = FxList[fx_name].defaults
+            filtered = {
                 k: v
-                for k, v in fxDefault.items()
+                for k, v in defaults.items()
                 if not (k.endswith("_") or k.endswith("_d") or k == "sus")
             }
-            fx_text = ", ".join([f"{k}={v}" for k, v in filtered_fx.items()])
-            fx_json_list.append({"text": fx_text, "displayText": fx_name + "_"})
-        return fx_json_list
+            result.append(
+                {
+                    "text": ", ".join(f"{k}={v}" for k, v in filtered.items()),
+                    "displayText": fx_name + "_",
+                }
+            )
+        return result
 
-    async def sendSynthList(self):
-        args_to_remove = [
-            "amp",
-            "sus",
-            "gate",
-            "pan",
-            "freq",
-            "mul",
-            "bus",
-            "atk",
-            "decay",
-            "rel",
-            "level",
-            "peak",
-            "blur",
-            "beat_dur",
-            "buf",
-            "vib",
-            "fmod",
-        ]
-        synthList = []
-        synth_list = sorted([f for f in SynthDefs])
-        for syn in synth_list:
-            if syn != "":
-                path = os.path.join(_SYNTH_DIR, syn + ".scd")
-                with open(str(path), "r") as synth:
-                    synth = synth.readlines()
-                synth_txt = [line.strip() for line in synth if line != "\n"]
-                txt = str("".join(synth_txt))
-                synthname = re.findall(r"SynthDef(?:\.new)?\(\\(\w+)", txt)
-                synthargs = re.findall(r"{\|(.{3,})\|(?:var)", txt)
-                if len(synthname) != 0 and len(synthargs) != 0:
-                    filtered_args = ", ".join(
-                        [
-                            arg.strip()
-                            for arg in synthargs[0].split(", ")
-                            if arg.split("=")[0].strip() not in args_to_remove
-                        ]
-                    )
-                    synthList.append(
-                        {"text": filtered_args, "displayText": synthname[0]}
-                    )
-        return synthList
+    async def _get_synth_list(self):
+        result = []
+        for syn in sorted(SynthDefs):
+            if not syn:
+                continue
+            path = os.path.join(_SYNTH_DIR, syn + ".scd")
+            with open(path) as f:
+                content = "".join(line.strip() for line in f if line.strip())
+            names = re.findall(r"SynthDef(?:\.new)?\(\\(\w+)", content)
+            args = re.findall(r"{\|(.{3,})\|(?:var)", content)
+            if names and args:
+                filtered = ", ".join(
+                    a.strip()
+                    for a in args[0].split(", ")
+                    if a.split("=")[0].strip() not in _SYNTH_ARGS_IGNORE
+                )
+                result.append({"text": filtered, "displayText": names[0]})
+        return result
 
-    def sendScale(self):
-        """send Scale to OSC server"""
-        try:
-            while self.isRunning:
-                msg = json.dumps({"type": "scale", "scale": str(Scale.default.name)})
-                asyncio.run(self.sendWebsocket(msg))
-                sleep(self.bpmTime * 10)
-        except Exception:
-            pass
+    # --- Control ---
 
-    def sendRoot(self):
-        """send Root to OSC server"""
-        try:
-            while self.isRunning:
-                msg = json.dumps({"type": "root", "root": str(Root.default)})
-                asyncio.run(self.sendWebsocket(msg))
-                sleep(self.bpmTime * 10)
-        except Exception:
-            pass
-
-    def sendBeat(self):
-        """send Clock.beat to OSC server"""
-        try:
-            while self.isRunning:
-                msg = json.dumps({"type": "beat", "beat": Clock.beat})
-                asyncio.run(self.sendWebsocket(msg))
-                sleep(self.beatTime)
-        except Exception:
-            pass
-
-    def sendPlayer(self):
-        """send active player to OSC server"""
-        try:
-            while self.isRunning:
-                self.addPlayerTurn()
-                playerListCount = []
-                soloPlayers = [p.name for p in Clock.solo.data]
-                for k, v in self.playerCounter.items():
-                    duration = f"{divmod(v, 60)[0]:02d}:{divmod(v, 60)[1]:02d}"
-                    player = k.name
-                    if k.synthdef in ["loop", "stretch"]:
-                        name = k.filename
-                    else:
-                        name = k.synthdef
-                    playerListCount.append(
-                        json.dumps(
-                            {
-                                "player": player,
-                                "name": name,
-                                "duration": duration,
-                                "solo": player in soloPlayers,
-                            }
-                        )
-                    )
-                msg = json.dumps({"type": "players", "players": playerListCount})
-                asyncio.run(self.sendWebsocket(msg))
-                sleep(self.plyTime)
-        except Exception:
-            pass
-
-    def sendChrono(self):
-        """send ChronoTime to OSC server"""
-        try:
-            while self.isRunning:
-                elapsedTime = time() - self.timeInit
-                msg = json.dumps({"type": "chrono", "chrono": elapsedTime})
-                asyncio.run(self.sendWebsocket(msg))
-                sleep(self.chronoTime)
-        except Exception:
-            pass
-
-    def addPlayerTurn(self):
-        """add one to player dictionary turn"""
-        try:
-            playerList = Clock.playing
-            for p in playerList:
-                if p in self.playerCounter.keys():
-                    self.playerCounter[p] += 1
-                else:
-                    self.playerCounter[p] = 1
-            # Clean non playing player
-            delplayer = [k for k in self.playerCounter.keys() if k not in playerList]
-            for d in delplayer:
-                self.playerCounter.pop(d, None)
-        except Exception as err:
-            print("addPlayerTurn problem : ", err)
-
-    def sendOnce(self, txt, helpType=""):
-        """send on txt msg to OSC"""
-        msg = json.dumps({"type": "help", "helpType": helpType, "help": txt})
-        asyncio.run(self.sendWebsocket(msg))
+    def send_once(self, txt, help_type=""):
+        asyncio.run(
+            self._send_ws(
+                json.dumps({"type": "help", "helpType": help_type, "help": txt})
+            )
+        )
 
     def stop(self):
-        self.isRunning = False
+        self.is_running = False
 
     def start(self):
-        self.isRunning = True
-        self.threadScale.start()
-        self.threadRoot.start()
-        self.threadBeat.start()
-        self.threadPlayer.start()
-        self.threadChrono.start()
+        self.is_running = True
+        for t in self._periodic_threads:
+            t.start()
 
 
 try:
-    wsPanel = WebFoxDotPanelWs()
+    ws_panel = WebFoxDotPanelWs()
 except Exception as e:
     print(f"Error starting FoxDot WebSocket server: {e}")
 
 
 def unsolo():
-    """Unsolo all soloed players"""
     for p in Clock.playing:
         p.solo(0)
