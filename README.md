@@ -30,19 +30,22 @@ We know that there are already some people using IDEs like Pulsar or Vim with Fo
 - the websocket package for Python (install it with `pip install websockets`)
 
 ## ✨ Features
-- a code editor with syntax highlighting
-- a beautiful and responsive interface with resizable panel and console logs
-- change font family, code font size and interface font size 
-- change the code theme with dozens of themes available
-- a console log to see the output of FoxDot with the last item appended at the top
-- a panel to see all relevant information (Bpm, Scale, Root, Cpu usage, Timer, the current beat modulo, a list of active players and a list of available Loops, Synths, and Fx)
-- show the list of active players with their id, name of synth or loop, time of activity (with color based on elapsed time).
-- the ability to stop a player by clicking on the list.
-- show the solo players with a different color
-- a piano roll based on the actual scale and root and the ability to insert note in the editor by clicking on it (`Alt-P` or click on `Root` to enable/disable the piano roll)
-- a auto-completion feature with the ability to insert new random player, list of synth, list of fx, list of loop and a lot more.
-- comment and stop/start a player with just `Alt-x`
-- and a lot more to come...
+- Code editor with Python syntax highlighting
+- Responsive interface with resizable panel and console logs
+- Customizable font family, code font size and interface font size
+- Dozens of code themes and interface themes available
+- Console log with color-coded output (errors in red, prompts in green, input in blue)
+- Info panel showing BPM, Scale, Root, CPU usage, Timer, beat modulo, active players, and available Loops/Synths/Fx
+- Active player list with synth name, duration (color transitions from green to orange to red), and click-to-stop
+- Solo players highlighted
+- Piano roll based on current scale and root with click-to-insert notes (`Alt-P` or click `Root`)
+- Auto-completion with synth/fx descriptions shown in the dropdown
+- Line markers for visual annotation (Alt+1/2/3 for Red/Green/Blue, Alt+4 to reset)
+- Comment and stop/start a player with `Alt-x`
+- WebSocket auto-reconnect on connection loss
+- WebSocket origin check to prevent cross-origin code injection
+- Unified startup file supporting both FoxDot and Renardo
+- Auto-detection of Python executable (python3/python)
 
 
 ## 🐍 Installation with Python
@@ -181,25 +184,36 @@ This should be located in the Renardo directory, something like:
 ## 🚀 Usage
 All things that work in FoxDot or Renardo will work in WebFoxDot. 
 
-- evaluate a line of code with `Ctrl-Enter`
-- evaluate a block of code with `Ctrl-Alt-Enter`
-- stop all players with `Ctrl-;`
-- auto-completion with `Ctrl-Space`
-- comment a line and stop a player with `Alt-x`
-- you can comment and stop a block with `Ctrl-Alt-x`
-- show the piano roll with `Alt-P`
-- solo a player with `Alt-S`
-- unsolo all players with `Ctrl-Alt-S`
-- increment a value with `Alt-=`
-- decrement a value with `Ctrl-Alt-=`
+| Shortcut                    | Action                             |
+| --------------------------- | ---------------------------------- |
+| `Ctrl-Enter`                | Evaluate line                      |
+| `Ctrl-Alt-Enter`            | Evaluate block                     |
+| `Ctrl-;`                    | Stop all players                   |
+| `Ctrl-Space`                | Auto-completion                    |
+| `Alt-X`                     | Comment line and stop player       |
+| `Ctrl-Alt-X`                | Comment block and stop players     |
+| `Alt-P`                     | Toggle piano roll                  |
+| `Alt-S`                     | Solo player                        |
+| `Ctrl-Alt-S`                | Unsolo all players                 |
+| `Alt-=`                     | Increment value under cursor       |
+| `Ctrl-Alt-=`                | Decrement value under cursor       |
+| `Alt-1` / `Alt-2` / `Alt-3` | Set Red / Green / Blue line marker |
+| `Alt-4`                     | Reset all line markers             |
+| `Alt-F`                     | Open search                        |
+| `Ctrl-G`                    | Find next                          |
+| `Ctrl-S`                    | Save code to file                  |
 
-And many more to discover, a full list of shortcuts is available in the config panel.
+A full list of shortcuts is available in the config panel.
 
 ## 🗺️ Roadmap
 - [ ] Add more interface themes
 - [x] Add a vim mode
-- [ ] a clear console button
-- [X] renardo compatibility
+- [ ] Clear console button
+- [x] Renardo compatibility (unified startup.py)
+- [x] Error detection and colored log output
+- [x] Auto-detection of python executable
+- [x] Synth/Fx descriptions in autocomplete
+- [x] Line markers (Alt+1/2/3/4)
 
 ## 📝 License
 
