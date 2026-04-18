@@ -32,9 +32,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 	// DOM elements
 	const chrono = document.getElementById('timer');
 
-	// WebSocket
-	const wsServer = new WebSocket(`ws://localhost:1234`);
+	// WebSocket with auto-reconnect
+	let wsServer = null;
   	let foxdotWs = null;
+
+	function connectWsServer() {
+		wsServer = new WebSocket(`ws://localhost:1234`);
+		wsServer.onopen = () => console.log('Backend WebSocket connected');
+		wsServer.onclose = () => {
+			console.log('Backend WebSocket closed, reconnecting in 3s...');
+			setTimeout(connectWsServer, 3000);
+		};
+		wsServer.onerror = () => wsServer.close();
+		wsServer.onmessage = (event) => {
+			try {
+				const message = JSON.parse(event.data);
+				if (message.type === 'foxdot_log') {
+					logsUtils.appendLog(message.data, message.color);
+				}
+			} catch (error) {
+				console.error('Error parsing WebSocket message:', error);
+			}
+		};
+	}
+	connectWsServer();
 
 	// CodeMirror
 	const editor = CodeMirror(document.getElementById('editor'), {
@@ -75,17 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		}));
 	});
 	
-	// Log the FoxDot output
-	wsServer.onmessage = (event) => {    
-		try {
-		  const message = JSON.parse(event.data);
-		  if (message.type === 'foxdot_log') {
-			// console.log(message.data);
-			logsUtils.appendLog(message.data, message.color);
-		  }
-		} catch (error) {
-		}
-	};
+	// wsServer.onmessage is handled in connectWsServer()
 
 	// Reset timer on click
 	chrono.addEventListener('click', ()=> functionUtils.resetChrono(wsServer));
@@ -173,10 +184,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 			console.error('Error on FoxDot message ', error);
 			}
 		};
-		foxdotWs.onerror = (err) => {
-			console.error('Socket encountered error: ', err.message, 'Closing socket');
-			foxdotWs.close();
+		foxdotWs.onclose = () => {
+			console.log('FoxDot WebSocket closed, reconnecting in 3s...');
+			setTimeout(foxDotWs, 3000);
 		};
+		foxdotWs.onerror = () => foxdotWs.close();
 	}
 	
 	foxDotWs();
