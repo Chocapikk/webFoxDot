@@ -1,0 +1,4 @@
+[lint]
+# F821: undefined names are FoxDot/Renardo runtime globals injected at startup
+# These files run inside the FoxDot/Renardo interpreter, not standalone
+per-file-ignores = { "startup.py" = ["F821"], "startup-renardo.py" = ["F821"] }
