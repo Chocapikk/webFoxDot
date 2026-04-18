@@ -8,6 +8,18 @@ import re
 
 loops = Samples.loops
 
+# Renardo compatibility: FxList is named differently
+try:
+    FxList = effect_manager
+except Exception:
+    pass
+
+# Resolve synth definition directory for both FoxDot and Renardo
+try:
+    _SYNTH_DIR = SYNTHDEF_DIR
+except Exception:
+    _SYNTH_DIR = os.path.join(FOXDOT_ROOT, "osc", "scsyndef")
+
 
 class WebFoxDotPanelWs:
     def __init__(self, ip="localhost", port=20000):
@@ -153,11 +165,10 @@ class WebFoxDotPanelWs:
             "fmod",
         ]
         synthList = []
-        path = os.path.join(FOXDOT_ROOT, "osc", "scsyndef", "")
         synth_list = sorted([f for f in SynthDefs])
         for syn in synth_list:
             if syn != "":
-                path = os.path.join(FOXDOT_ROOT, "osc", "scsyndef", syn + ".scd")
+                path = os.path.join(_SYNTH_DIR, syn + ".scd")
                 with open(str(path), "r") as synth:
                     synth = synth.readlines()
                 synth_txt = [line.strip() for line in synth if line != "\n"]
