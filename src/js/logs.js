@@ -6,7 +6,7 @@ export const logsUtils = {
   logs: document.getElementById('logs'),
 
   initResize: function(editor) {
-    this.logSeparator.addEventListener('mousedown', (e) => {
+    this.logSeparator.addEventListener('mousedown', () => {
       this.isResizing = true;
       document.addEventListener('mousemove', this.resize.bind(this, editor));
       document.addEventListener('mouseup', this.stopResize.bind(this));

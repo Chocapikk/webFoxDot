@@ -180,8 +180,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 		hint: (cm) => foxdotAutocomplete.hint(cm, CodeMirror),
 	  });
 
-	function foxDotWs(){
-		foxdotWs = new WebSocket(`ws://localhost:20000`);
+	function connectFoxDotWs(){
+		const foxdotWs = new WebSocket(`ws://localhost:20000`);
 		foxdotWs.onopen = () => {
 			foxdotWs.send(JSON.stringify({ type: 'get_autocomplete' }));
 		};
@@ -206,12 +206,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 		};
 		foxdotWs.onclose = () => {
 			console.log('FoxDot WebSocket closed, reconnecting in 3s...');
-			setTimeout(foxDotWs, 3000);
+			setTimeout(connectFoxDotWs, 3000);
 		};
 		foxdotWs.onerror = () => foxdotWs.close();
 	}
 	
-	foxDotWs();
+	connectFoxDotWs();
 
 	// piano insert at cursor
 	document.querySelectorAll('#piano-roll .piano-key li').forEach(key => {

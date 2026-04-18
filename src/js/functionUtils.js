@@ -40,7 +40,7 @@ export const functionUtils = {
 
         if (blockCode.trim()) {
             // Check if the code is a player and if it is, stop it
-            let blockCodeArray = blockCode.split('\n');
+            const blockCodeArray = blockCode.split('\n');
             blockCodeArray.forEach((code, index) => {
             blockCodeArray[index] = functionUtils.ifPlayerStop(code);
             });
@@ -53,7 +53,7 @@ export const functionUtils = {
 
     // Save the content of the editor into a .py file
     saveEditorContent(cm) {
-        let content = cm.getValue();
+        const content = cm.getValue();
         
         const timestamp = new Date().toISOString().replace(/[:.-]/g, '');
         const filename = `code_${timestamp}.py`;
@@ -87,7 +87,7 @@ export const functionUtils = {
     // Increment/decrement the value of the number under the cursor
     incrementValue(cm, value){
         const cursor = cm.getCursor();
-        let text = cm.getRange({line: cursor.line, ch: cursor.ch}, {line: cursor.line, ch: cursor.ch +1});
+        const text = cm.getRange({line: cursor.line, ch: cursor.ch}, {line: cursor.line, ch: cursor.ch +1});
         const num = parseInt(text);
         if (!isNaN(num)) {
             cm.replaceRange((num + value).toString(), {line: cursor.line, ch: cursor.ch}, {line: cursor.line, ch: cursor.ch + 1});

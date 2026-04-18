@@ -221,13 +221,12 @@ export const foxdotAutocomplete = {
 
         else if (isInsideParentheses) {
             const prefix = token.string.slice(0, cursorPosition - token.start).replace(/[^a-zA-Z:]/g, "");
-            let foxdotKeyword = [];
+            let foxdotKeyword;
             if (prefix.startsWith('x')) {
-                foxdotKeyword = this.withRender(this.fxList.filter(f => f.displayText.toLowerCase().startsWith(prefix.slice(1,).toLowerCase())));
-            }
-            else {
+                foxdotKeyword = this.withRender(this.fxList.filter(f => f.displayText.toLowerCase().startsWith(prefix.slice(1).toLowerCase())));
+            } else {
                 const combinedKeyword = [...this.foxKeyword, ...this.patternFunction];
-                foxdotKeyword = combinedKeyword.filter(f => f.displayText.toLowerCase().startsWith(prefix.toLowerCase()));;
+                foxdotKeyword = combinedKeyword.filter(f => f.displayText.toLowerCase().startsWith(prefix.toLowerCase()));
             }
             return {
                 list: foxdotKeyword.length > 0 ? foxdotKeyword.sort((a, b) => a.displayText.localeCompare(b.displayText)) : foxdotKeyword.sort((a, b) => a.displayText.localeCompare(b.displayText)),
@@ -257,7 +256,7 @@ export const foxdotAutocomplete = {
             } else {
                 return {
                     list: filteredSynths.length > 0 ? filteredSynths.sort((a, b) => a.displayText.localeCompare(b.displayText)) : this.synths.sort((a, b) => a.displayText.localeCompare(b.displayText)),
-                    from: CodeMirror.Pos(cursor.line, (token.string.trim() == "") ? token.start +1 : token.start ),
+                    from: CodeMirror.Pos(cursor.line, (token.string.trim() === "") ? token.start + 1 : token.start),
                     to: cursor,
                 };
             }
