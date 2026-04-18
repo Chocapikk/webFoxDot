@@ -31,35 +31,31 @@ export const logsUtils = {
     document.removeEventListener('mouseup', this.stopResize);
   },
 
-  // Show logs in the console
   appendLog(message, color) {
-    if (message === '') {
-      return;
-    }
+    if (message === '') return;
+
     const entry = document.createElement('pre');
     entry.className = 'log-entry';
-    if (color){
-      entry.style.color = color;
-    }
-    if (message.includes('Traceback')) {
+
+    if (color === 'error' || message.includes('Traceback')) {
       message = this.formatErrorMessage(message);
       entry.classList.add('error-log');
-    }
-    else if (!message.includes('>>')) {
+    } else if (color === 'prompt') {
+      entry.classList.add('prompt-log');
+    } else if (color === 'input') {
+      entry.classList.add('input-log');
+    } else if (!message.includes('>>')) {
       entry.classList.add('help');
     }
+
     entry.textContent = message;
-    this.logs.insertBefore(entry, logs.firstChild);
+    this.logs.insertBefore(entry, this.logs.firstChild);
     this.logs.scrollTop = 0;
   },
 
   formatErrorMessage(errorMessage) {
     const lines = errorMessage.split('\n');
     const caretIndex = lines.findIndex(line => line.includes('File "FoxDot", line 1'));
-    if (caretIndex) {
-        return lines.slice(caretIndex + 1).join('\n');
-    } else {
-        return errorMessage;
-    }
+    return caretIndex ? lines.slice(caretIndex + 1).join('\n') : errorMessage;
   }
 };
