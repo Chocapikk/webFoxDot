@@ -171,7 +171,7 @@ Inject the websocket package dependency in the Renardo code:
 pipx inject renardo websockets
 ```
 
-Copy the content of startup-renardo.py to your Renardo startup file:
+Copy the content of `startup.py` to your Renardo startup file (the same `startup.py` now supports both FoxDot and Renardo):
 ```bash
 This should be located in the Renardo directory, something like:
 ~/.local/pipx/venvs/renardo/lib/python3.13/site-packages/renardo_lib/Custom/startup.py
