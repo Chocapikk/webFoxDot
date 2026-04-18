@@ -26,6 +26,7 @@ def resolve_python():
 
 HOST = "localhost"
 WS_PORT = 1234
+ALLOWED_ORIGINS = {"http://localhost", "http://127.0.0.1"}
 
 
 _ERROR_PATTERNS = (
@@ -60,7 +61,19 @@ async def broadcast_log(message, clients):
         await client.send(payload)
 
 
+def check_origin(origin):
+    if origin is None:
+        return True  # non-browser clients (e.g. Python websocket)
+    return any(origin.startswith(allowed) for allowed in ALLOWED_ORIGINS)
+
+
 async def handle_websocket(websocket, _path, foxdot_process, clients):
+    origin = websocket.request_headers.get("Origin")
+    if not check_origin(origin):
+        print(f"Rejected connection from origin: {origin}")
+        await websocket.close(4003, "Forbidden origin")
+        return
+
     print("New client connected")
     clients.add(websocket)
     try:
