@@ -1,5 +1,5 @@
 import { EventEmitter } from './eventBus.js';
-import { playersList, updatePlayersList } from './functionUtils.js';
+import { updatePlayersList } from './functionUtils.js';
 
 // Toggle Panel
 const panel = document.getElementById('panel')
@@ -213,12 +213,13 @@ function getDurationColor(totalMinutes) {
     const green = '#4caf50';
     const orange = '#ff9800';
     const red = '#f44336';
-    
+
     if (totalMinutes <= 1) {
         return green;
+    } else if (totalMinutes <= 3) {
+        return interpolateColor(green, orange, (totalMinutes - 1) / 2);
     } else if (totalMinutes <= 5) {
-        const factor = (totalMinutes - 1) / 4; // 4 = (5-1)
-        return interpolateColor(green, red, factor);
+        return interpolateColor(orange, red, (totalMinutes - 3) / 2);
     }
     return red;
 }
