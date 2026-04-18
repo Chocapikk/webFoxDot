@@ -37,56 +37,59 @@ panelToggle.addEventListener('change', () => {
   }
 })
 
-const ws = new WebSocket(`ws://localhost:20000`);
+let ws = null;
 
-ws.onopen = function() {
-    console.log('FoxDot WebSocket connection opened');
-};
+function connectPanelWs() {
+    ws = new WebSocket(`ws://localhost:20000`);
 
-ws.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    
-    switch(data.type) {
-        case 'scale':
-            document.getElementById('scale').textContent = data.scale;
-            updatePianoKeys(data.scale, document.getElementById('root').textContent);
-            break;
-        case 'root':
-            document.getElementById('root').textContent = data.root;
-            updatePianoKeys(document.getElementById('scale').textContent, data.root);
-            break;
-        case 'cpu':
-            updateCpu(data.cpu);
-            break;
-        case 'bpm':
-            document.getElementById('bpm').textContent = data.bpm;
-            break;
-        case 'beat':
-            updateBeat(data.beat);
-            break;
-        case 'chrono':
-            document.getElementById('timer').textContent = formatTime(data.chrono);
-            break;
-        case 'players':
-            formatPlayers(data.players)
-            break;
-        case 'help':
-            const helpContainer = document.getElementById('help')
-            helpContainer.textContent = data.help;
-            helpContainer.style.height = helpContainer.scrollHeight + 'px';
-            break;
-        default:
-            break;
-    }
-};
+    ws.onopen = () => console.log('Panel WebSocket connected');
 
-ws.onclose = function() {
-    console.log('WebSocket FoxDot connection closed');
-};
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        switch(data.type) {
+            case 'scale':
+                document.getElementById('scale').textContent = data.scale;
+                updatePianoKeys(data.scale, document.getElementById('root').textContent);
+                break;
+            case 'root':
+                document.getElementById('root').textContent = data.root;
+                updatePianoKeys(document.getElementById('scale').textContent, data.root);
+                break;
+            case 'cpu':
+                updateCpu(data.cpu);
+                break;
+            case 'bpm':
+                document.getElementById('bpm').textContent = data.bpm;
+                break;
+            case 'beat':
+                updateBeat(data.beat);
+                break;
+            case 'chrono':
+                document.getElementById('timer').textContent = formatTime(data.chrono);
+                break;
+            case 'players':
+                formatPlayers(data.players);
+                break;
+            case 'help': {
+                const helpContainer = document.getElementById('help');
+                helpContainer.textContent = data.help;
+                helpContainer.style.height = helpContainer.scrollHeight + 'px';
+                break;
+            }
+            default:
+                break;
+        }
+    };
 
-ws.onerror = function(error) {
-    console.error('WebSocket FoxDot error:', error);
-};
+    ws.onclose = () => {
+        console.log('Panel WebSocket closed, reconnecting in 3s...');
+        setTimeout(connectPanelWs, 3000);
+    };
+
+    ws.onerror = () => ws.close();
+}
+
+connectPanelWs();
 
 document.getElementById('root').addEventListener('click', () => {
     const pianoRoll = document.getElementById('piano-roll');
