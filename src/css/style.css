@@ -164,6 +164,16 @@ body {
   color: var(--col-full-red);
 }
 
+.log-entry.prompt-log {
+  border-color: var(--col-green);
+  color: var(--col-green);
+}
+
+.log-entry.input-log {
+  border-color: var(--col-blue);
+  color: var(--text-col-1);
+}
+
 .log-entry.help {
   border-color: var(--col-blue);
 }
