@@ -1,6 +1,8 @@
 import asyncio
 import json
 import os
+import shutil
+import sys
 from subprocess import PIPE, Popen
 
 import websockets
@@ -11,6 +13,16 @@ except Exception:
     print(
         "Make sure to uncomment the correct PROGRAM_PATH and PROGRAM_CMD in config.py"
     )
+
+
+def resolve_python():
+    """Find the correct python executable (python3 or python)."""
+    for name in ("python3", "python"):
+        if shutil.which(name):
+            return name
+    print("No python executable found in PATH")
+    sys.exit(1)
+
 
 HOST = "localhost"
 WS_PORT = 1234
