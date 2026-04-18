@@ -113,21 +113,21 @@ export function setupConfigPanel(editor) {
     });
 
     // Open the shortcut modal
-    modalbtn.onclick = function() {
+    modalbtn.addEventListener('click', () => {
         modal.style.display = "block";
-    }
+    });
 
     // Close the shortcut modal
-    closeModal.onclick = function() {
+    closeModal.addEventListener('click', () => {
         modal.style.display = "none";
-    }
+    });
 
     // Close the modal when clicking outside
-    window.onclick = function(event) {
-        if (event.target == modal) {
-        modal.style.display = "none";
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = "none";
         }
-    }
+    });
 
     // Theme change
     // themeInterface.addEventListener('change', (event) => {
