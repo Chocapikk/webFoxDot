@@ -1,48 +1,6 @@
 export const functionUtils = {
     playersList: [],
 
-    stopClock(wsServer) {
-        wsServer.send(JSON.stringify({
-            type: 'evaluate_code',
-            code: 'Clock.clear()\n'
-        }));
-    },
-
-    unSoloPlayers(wsServer) {
-        wsServer.send(JSON.stringify({
-            type: 'evaluate_code',
-            code: 'unsolo()\n'
-        }));
-    },
-
-    soloPlayer(cm, wsServer) {
-        const cursor = cm.getCursor();
-        let startLine = cursor.line;
-        let endLine = cursor.line;
-
-        const blockCode = cm.getRange(
-            {line: startLine, ch: 0},
-            {line: endLine, ch: cm.getLine(endLine).length}
-        );
-
-        const playerName = this.getPlayer(blockCode);
-    
-        if (playerName) {
-            wsServer.send(JSON.stringify({
-                type: 'evaluate_code',
-                code: `${playerName}.solo()\n`
-            }));
-        }
-    },
-
-    // reset the chrono
-    resetChrono(wsServer) {
-        wsServer.send(JSON.stringify({
-          type: 'evaluate_code',
-          code: 'ws_panel.time_init = time()\n'
-        }));
-    },
-
     // Check if the code to evaluate is a player and if it is, stop it
     ifPlayerStop(codeToEvaluate) {
         const playerPattern = /^[#_]\s*([a-zA-Z]\d+|[a-zA-Z]{2})\s*>>|^#\s*[a-zA-Z]\d+\s*\.\w+\s*=\s*\d+/;
@@ -94,7 +52,7 @@ export const functionUtils = {
 
 
     // Save the content of the editor into a .py file
-    saveEditorContent(cm, wsServer) {
+    saveEditorContent(cm) {
         let content = cm.getValue();
         
         const timestamp = new Date().toISOString().replace(/[:.-]/g, '');
