@@ -278,3 +278,14 @@ body {
 .CodeMirror-hint-active {
   background: var(--col-blue);
 }
+
+.hint-name {
+  font-weight: bold;
+}
+
+.hint-description {
+  margin-left: 8px;
+  opacity: 0.6;
+  font-size: 0.9em;
+  font-style: italic;
+}
