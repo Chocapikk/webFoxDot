@@ -45,7 +45,12 @@ function connectPanelWs() {
     ws.onopen = () => console.log('Panel WebSocket connected');
 
     ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
+        let data;
+        try {
+            data = JSON.parse(event.data);
+        } catch {
+            return;
+        }
         switch(data.type) {
             case 'scale':
                 document.getElementById('scale').textContent = data.scale;
@@ -173,13 +178,28 @@ function formatPlayers(message) {
     const hasSolo = players.some(p => p.solo);
 
     const playersDiv = document.getElementById('players');
-    playersDiv.innerHTML = players.map(p => `
-        <div class="player-line ${hasSolo && !p.solo ? 'player-solo' : ''}" data-player-id="${p.id}">
-            <span class="player-id">${p.id}</span>
-            <span class="player-synth">${p.synth}</span>
-            <span class="player-duration" style="color: ${p.durationColor}">${p.duration}</span>
-        </div>
-    `).join('');
+    playersDiv.innerHTML = '';
+    players.forEach(p => {
+        const line = document.createElement('div');
+        line.className = `player-line${hasSolo && !p.solo ? ' player-solo' : ''}`;
+        line.dataset.playerId = p.id;
+
+        const idSpan = document.createElement('span');
+        idSpan.className = 'player-id';
+        idSpan.textContent = p.id;
+
+        const synthSpan = document.createElement('span');
+        synthSpan.className = 'player-synth';
+        synthSpan.textContent = p.synth;
+
+        const durSpan = document.createElement('span');
+        durSpan.className = 'player-duration';
+        durSpan.style.color = p.durationColor;
+        durSpan.textContent = p.duration;
+
+        line.append(idSpan, synthSpan, durSpan);
+        playersDiv.appendChild(line);
+    });
 
     document.querySelectorAll('.player-line').forEach(line => {
         line.addEventListener('click', (e) => {
