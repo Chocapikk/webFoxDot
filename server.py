@@ -57,10 +57,9 @@ async def read_foxdot_output(foxdot_process, clients):
         print(log_message)
 
         buffer.append(log_message)
-        if not log_message or log_message.endswith((">>>", "...")):
-            if buffer:
-                await broadcast_log("\n".join(buffer), clients)
-                buffer = []
+        if (not log_message or log_message.endswith((">>>", "..."))) and buffer:
+            await broadcast_log("\n".join(buffer), clients)
+            buffer = []
 
 
 async def main():
@@ -82,7 +81,7 @@ async def main():
         return
 
     clients = set()
-    asyncio.create_task(read_foxdot_output(foxdot_process, clients))
+    _output_task = asyncio.create_task(read_foxdot_output(foxdot_process, clients))
 
     async with websockets.serve(
         lambda ws, path: handle_websocket(ws, path, foxdot_process, clients),
