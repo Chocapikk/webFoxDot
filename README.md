@@ -208,7 +208,7 @@ A full list of shortcuts is available in the config panel.
 ## 🗺️ Roadmap
 - [ ] Add more interface themes
 - [x] Add a vim mode
-- [ ] Clear console button
+- [x] Clear console button
 - [x] Renardo compatibility (unified startup.py)
 - [x] Error detection and colored log output
 - [x] Auto-detection of python executable
