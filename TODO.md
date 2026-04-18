@@ -8,7 +8,7 @@
 - [ ] fix better output (on error and color)
 
 ## Server
-- [ ] python vs python3
+- [X] python vs python3 (auto-detected via `resolve_python()`)
 
 ## Autocomplete
 - [X] fix automatic retrieve
