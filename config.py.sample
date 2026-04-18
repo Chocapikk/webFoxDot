@@ -1,21 +1,23 @@
 # Configuration file when running the server with python server.py
-# 
-# IMPORTANT: Please uncomment the PROGRAM_PATH AND PROGRAM_CMD lines that corresponds to the program you are using and fill the correct path when using a Github clone of FoxDot.
-# Also make sure to set the correct python executable (python3 or python).
 #
-# 1. I'm using FoxDot installed with pip 
+# IMPORTANT: Uncomment the PROGRAM_PATH and PROGRAM_CMD that matches your setup.
+# The python executable is auto-detected (python3 or python), so you don't need
+# to worry about which one to use.
+#
+# 1. FoxDot installed with pip
 #
 # PROGRAM_PATH = "/"
 # PROGRAM_CMD = ['FoxDot', '-p']
 #
 #
-# 2. I'm using the FoxDot library cloned from GitHub
+# 2. FoxDot cloned from GitHub (python is auto-resolved at runtime)
 #
+# from server import resolve_python
 # PROGRAM_PATH = "/my/path/to/FoxDot"
-# PROGRAM_CMD = ['python', '-m', 'FoxDot', '-p']
+# PROGRAM_CMD = [resolve_python(), '-m', 'FoxDot', '-p']
 #
 #
-# 3. I'm using Renardo installed with pipx
+# 3. Renardo installed with pipx
 #
 # PROGRAM_PATH = "/"
-# PROGRAM_CMD = ["renardo", '-p'] 
+# PROGRAM_CMD = ["renardo", '-p']
