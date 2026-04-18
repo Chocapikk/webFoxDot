@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	// WebSocket with auto-reconnect
 	let wsServer = null;
-  	let foxdotWs = null;
 
 	function connectWsServer() {
 		wsServer = new WebSocket(`ws://localhost:1234`);
@@ -117,8 +116,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 	}
 
 	EventEmitter.on('send_foxdot', sendToServer);
-	
-	// wsServer.onmessage is handled in connectWsServer()
 
 	// Reset timer on click
 	chrono.addEventListener('click', () => sendToServer('ws_panel.time_init = time()'));
@@ -142,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	editor.setOption('extraKeys', {
 		'Ctrl-;': () => sendToServer('Clock.clear()'),
 		'Ctrl-Space': 'autocomplete',
-		'Ctrl-S': (cm)=> {functionUtils.saveEditorContent(cm,wsServer)},
+		'Ctrl-S': (cm) => functionUtils.saveEditorContent(cm),
 		'Alt-X': (cm) => {
 		  cm.toggleComment();
 		  evaluateCode(cm, false);
@@ -153,8 +150,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 		  cm.toggleComment();
 		  evaluateCode(cm, true);
 		},
-		'Alt-S': (cm) => {functionUtils.soloPlayer(cm, wsServer)},
-		'Ctrl-Alt-S': () => {functionUtils.unSoloPlayers(wsServer)},
+		'Alt-S': (cm) => {
+			const player = functionUtils.getPlayer(cm.getRange(
+				{line: cm.getCursor().line, ch: 0},
+				{line: cm.getCursor().line, ch: cm.getLine(cm.getCursor().line).length}
+			));
+			if (player) sendToServer(`${player}.solo()`);
+		},
+		'Ctrl-Alt-S': () => sendToServer('unsolo()'),
 		'Alt-1': (cm) => setMarker(cm, "Red"),
 		'Alt-2': (cm) => setMarker(cm, "Green"),
 		'Alt-3': (cm) => setMarker(cm, "Blue"),
@@ -189,11 +192,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 				const { loops, fxList, synthList } = functionUtils.formatFoxDotAutocomplete(message);
 				foxdotAutocomplete.loopList = loops;
 				foxdotAutocomplete.fxList = fxList;
-				foxdotAutocomplete.synths= synthList;
+				foxdotAutocomplete.synths = synthList;
 
 				updateHelpPanel(loops, fxList, synthList);
 
-				if (loops.length == 0 || fxList.length == 0 || synthList.length == 0) {
+				if (loops.length === 0 || fxList.length === 0 || synthList.length === 0) {
 				console.error(`Error on retrieving loops name (${loops.length}), effets (${fxList.length}), synths (${synthList.length})`);
 				}
 			}
