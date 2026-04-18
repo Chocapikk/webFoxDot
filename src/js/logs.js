@@ -53,6 +53,10 @@ export const logsUtils = {
     this.logs.scrollTop = 0;
   },
 
+  clear() {
+    this.logs.innerHTML = '';
+  },
+
   formatErrorMessage(errorMessage) {
     const lines = errorMessage.split('\n');
     const caretIndex = lines.findIndex(line => line.includes('File "FoxDot", line 1'));

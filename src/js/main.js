@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	// Init the logs panel
 	logsUtils.initResize(editor);
+	document.getElementById('clearLogsBtn').addEventListener('click', () => logsUtils.clear());
 
 	// Line markers for visual annotation
 	const activeMarkers = [];

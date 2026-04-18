@@ -124,12 +124,10 @@ body {
 #logPanel {
   display: flex;
   flex-direction: column;
+  position: relative;
   margin: 0;
   width: 100%;
-  /* flex-grow: 1; */
   height: 20%;
-  /* padding-top: 30px; */
-  
 }
 
 #logAndChat {
@@ -149,6 +147,25 @@ body {
   overflow-y: auto;
   border-top: 1px solid #3d3d3d;
   margin: 0 0.1rem;
+}
+
+#clearLogsBtn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  background: var(--bg-col-2);
+  color: var(--text-col-1);
+  border: 1px solid var(--border-col-1);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+  opacity: 0.6;
+  z-index: 10;
+}
+
+#clearLogsBtn:hover {
+  opacity: 1;
 }
 
 .log-entry {
