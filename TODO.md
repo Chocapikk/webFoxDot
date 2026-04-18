@@ -13,7 +13,7 @@
 ## Autocomplete
 - [X] fix automatic retrieve
 - [X] fix end of line with .
-- [ ] add definition
+- [X] add definition (synth/fx descriptions in autocomplete tooltips)
 
 ## editor
 - [X] fix python syntax highlight
