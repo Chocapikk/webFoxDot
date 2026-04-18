@@ -7,6 +7,8 @@ from time import sleep, time
 
 import websockets
 
+from synth_definitions import FX_DESCRIPTIONS, SYNTH_DESCRIPTIONS
+
 loops = Samples.loops
 
 # Renardo compatibility: FxList is named differently
@@ -230,6 +232,7 @@ class WebFoxDotPanelWs:
                 {
                     "text": ", ".join(f"{k}={v}" for k, v in filtered.items()),
                     "displayText": fx_name + "_",
+                    "description": FX_DESCRIPTIONS.get(fx_name, ""),
                 }
             )
         return result
@@ -250,7 +253,13 @@ class WebFoxDotPanelWs:
                     for a in args[0].split(", ")
                     if a.split("=")[0].strip() not in _SYNTH_ARGS_IGNORE
                 )
-                result.append({"text": filtered, "displayText": names[0]})
+                result.append(
+                    {
+                        "text": filtered,
+                        "displayText": names[0],
+                        "description": SYNTH_DESCRIPTIONS.get(names[0], ""),
+                    }
+                )
         return result
 
     # --- Control ---
