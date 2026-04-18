@@ -5,7 +5,7 @@
 - [X] autocomplete 
 
 # log
-- [ ] fix better output (on error and color)
+- [X] fix better output (on error and color) - errors detected via pattern matching, stderr captured
 
 ## Server
 - [X] python vs python3 (auto-detected via `resolve_python()`)
