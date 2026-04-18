@@ -56,6 +56,6 @@ export const logsUtils = {
   formatErrorMessage(errorMessage) {
     const lines = errorMessage.split('\n');
     const caretIndex = lines.findIndex(line => line.includes('File "FoxDot", line 1'));
-    return caretIndex ? lines.slice(caretIndex + 1).join('\n') : errorMessage;
+    return caretIndex !== -1 ? lines.slice(caretIndex + 1).join('\n') : errorMessage;
   }
 };
