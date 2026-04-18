@@ -39,7 +39,7 @@ export const functionUtils = {
     resetChrono(wsServer) {
         wsServer.send(JSON.stringify({
           type: 'evaluate_code',
-          code: 'wsPanel.timeInit = time()\n'
+          code: 'ws_panel.time_init = time()\n'
         }));
     },
 
