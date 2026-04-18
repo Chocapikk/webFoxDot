@@ -89,27 +89,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 	// Init the logs panel
 	logsUtils.initResize(editor);
 
-	EventEmitter.on('send_foxdot', (command) => {
-		wsServer.send(JSON.stringify({
-			type: 'evaluate_code',
-			code: command
-		}));
-	});
+	// Line markers for visual annotation
+	const activeMarkers = [];
+
+	function setMarker(cm, color) {
+		const cursor = cm.getCursor();
+		const line = cursor.line;
+		const className = `line${color}`;
+		const existing = activeMarkers.findIndex(m => m.line === line);
+		if (existing !== -1) {
+			activeMarkers[existing].handle.clear();
+			activeMarkers.splice(existing, 1);
+		}
+		const handle = cm.addLineClass(line, 'background', className);
+		activeMarkers.push({ line, handle, color: className });
+	}
+
+	function resetMarkers(cm) {
+		activeMarkers.forEach(m => cm.removeLineClass(m.handle, 'background', m.color));
+		activeMarkers.length = 0;
+	}
+
+	function sendToServer(code) {
+		if (wsServer && wsServer.readyState === WebSocket.OPEN) {
+			wsServer.send(JSON.stringify({ type: 'evaluate_code', code }));
+		}
+	}
+
+	EventEmitter.on('send_foxdot', sendToServer);
 	
 	// wsServer.onmessage is handled in connectWsServer()
 
 	// Reset timer on click
-	chrono.addEventListener('click', ()=> functionUtils.resetChrono(wsServer));
+	chrono.addEventListener('click', () => sendToServer('ws_panel.time_init = time()'));
 
 	// Evaluate the code and highlight the block with a flash
 	function evaluateCode(cm, multi){
-		var [blockCode, startLine, endLine] = functionUtils.getCodeAndCheckStop(cm, multi);
-	
-		// Send code
-		wsServer.send(JSON.stringify({
-			  type: 'evaluate_code',
-			  code: blockCode,
-		  }));
+		const [blockCode, startLine, endLine] = functionUtils.getCodeAndCheckStop(cm, multi);
+		sendToServer(blockCode);
 		
 		// Highlight the code
 		for (let i = startLine; i <= endLine; i++) {
@@ -123,7 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	}
 
 	editor.setOption('extraKeys', {
-		'Ctrl-;': ()=> functionUtils.stopClock(wsServer),
+		'Ctrl-;': () => sendToServer('Clock.clear()'),
 		'Ctrl-Space': 'autocomplete',
 		'Ctrl-S': (cm)=> {functionUtils.saveEditorContent(cm,wsServer)},
 		'Alt-X': (cm) => {
@@ -138,10 +155,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 		},
 		'Alt-S': (cm) => {functionUtils.soloPlayer(cm, wsServer)},
 		'Ctrl-Alt-S': () => {functionUtils.unSoloPlayers(wsServer)},
-		'Alt-1': (cm) => markerUtils.setMarker(cm, "Red"),
-		'Alt-2': (cm) => markerUtils.setMarker(cm, "Green"),
-		'Alt-3': (cm) => markerUtils.setMarker(cm, "Blue"),
-		'Alt-4': () => markerUtils.resetMarkers(), 
+		'Alt-1': (cm) => setMarker(cm, "Red"),
+		'Alt-2': (cm) => setMarker(cm, "Green"),
+		'Alt-3': (cm) => setMarker(cm, "Blue"),
+		'Alt-4': (cm) => resetMarkers(cm),
 		'Ctrl-Enter': (cm) => {evaluateCode(cm, false)},
 		'Ctrl-Alt-Enter': (cm) => {evaluateCode(cm, true)},
 		'Alt-F': "findPersistent",
