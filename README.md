@@ -64,15 +64,19 @@ nano config.py
 Change the FOXDOT_PATH to your foxdot path
 ```
 
-### Copy the content of this startup.py file to your FoxDot startup file:
+### Copy `startup.py` and `synth_definitions.py` to your FoxDot startup directory:
 ```text
-Your startup file is located in the FoxDot directory:
-/FoxDot/lib/Custom/startup.py
+Your startup directory is located in the FoxDot directory:
+/FoxDot/lib/Custom/
+
+Copy both files:
+- startup.py
+- synth_definitions.py (required for autocomplete descriptions)
 ```
 
 ### Start SuperCollider as usual
 
-### Run Foxdot with a server:
+### Run FoxDot with a server:
 ```python
 python server.py
 ```
@@ -135,10 +139,14 @@ nano config.js
 Change the FOXDOT_PATH to your foxdot path. Not yet fully compatible with Renardo, you have to change the spawn in `server.js` to the correct command. 
 ```
 
-### Copy the content of this startup.py file to your FoxDot startup file:
+### Copy `startup.py` and `synth_definitions.py` to your FoxDot startup directory:
 ```text
-Your startup file is located in the FoxDot directory:
-/FoxDot/lib/Custom/startup.py
+Your startup directory is located in the FoxDot directory:
+/FoxDot/lib/Custom/
+
+Copy both files:
+- startup.py
+- synth_definitions.py (required for autocomplete descriptions)
 ```
 
 ### Start SuperCollider as usual
@@ -174,10 +182,14 @@ Inject the websocket package dependency in the Renardo code:
 pipx inject renardo websockets
 ```
 
-Copy the content of `startup.py` to your Renardo startup file (the same `startup.py` now supports both FoxDot and Renardo):
+Copy `startup.py` and `synth_definitions.py` to your Renardo startup directory (the same `startup.py` now supports both FoxDot and Renardo):
 ```bash
 This should be located in the Renardo directory, something like:
-~/.local/pipx/venvs/renardo/lib/python3.13/site-packages/renardo_lib/Custom/startup.py
+~/.local/pipx/venvs/renardo/lib/python3.13/site-packages/renardo_lib/Custom/
+
+Copy both files:
+- startup.py
+- synth_definitions.py (required for autocomplete descriptions)
 ```
 
 
