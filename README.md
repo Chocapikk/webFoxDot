@@ -205,6 +205,20 @@ All things that work in FoxDot or Renardo will work in WebFoxDot.
 
 A full list of shortcuts is available in the config panel.
 
+## 🧹 Linting
+
+**Python** (requires [ruff](https://docs.astral.sh/ruff/)):
+```bash
+ruff check .
+ruff format .
+```
+
+**JavaScript** (requires npm dependencies):
+```bash
+npm install
+npx eslint src/js/
+```
+
 ## 🗺️ Roadmap
 - [ ] Add more interface themes
 - [x] Add a vim mode
