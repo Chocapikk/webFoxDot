@@ -28,8 +28,34 @@ HOST = "localhost"
 WS_PORT = 1234
 
 
+_ERROR_PATTERNS = (
+    "Traceback",
+    "Error",
+    "Exception",
+    "SyntaxError",
+    "NameError",
+    "TypeError",
+    "ValueError",
+    "AttributeError",
+    "KeyError",
+    "IndexError",
+    "ZeroDivisionError",
+)
+
+
+def detect_log_color(message):
+    if any(p in message for p in _ERROR_PATTERNS):
+        return "error"
+    if message.startswith(">>>"):
+        return "prompt"
+    if message.startswith(">>"):
+        return "input"
+    return None
+
+
 async def broadcast_log(message, clients):
-    payload = json.dumps({"type": "foxdot_log", "data": message, "color": None})
+    color = detect_log_color(message)
+    payload = json.dumps({"type": "foxdot_log", "data": message, "color": color})
     for client in clients:
         await client.send(payload)
 
@@ -54,24 +80,29 @@ async def handle_websocket(websocket, _path, foxdot_process, clients):
         print("Client disconnected")
 
 
-async def read_foxdot_output(foxdot_process, clients):
+async def _read_stream(stream, clients, is_stderr=False):
     buffer = []
     while True:
-        line = await asyncio.get_event_loop().run_in_executor(
-            None, foxdot_process.stdout.readline
-        )
+        line = await asyncio.get_event_loop().run_in_executor(None, stream.readline)
         if not line:
             continue
 
         log_message = line.decode()
         if "^" not in log_message or not log_message.replace("^", "").isspace():
-            log_message = line.decode().strip()
+            log_message = log_message.strip()
         print(log_message)
 
         buffer.append(log_message)
         if (not log_message or log_message.endswith((">>>", "..."))) and buffer:
             await broadcast_log("\n".join(buffer), clients)
             buffer = []
+
+
+async def read_foxdot_output(foxdot_process, clients):
+    await asyncio.gather(
+        _read_stream(foxdot_process.stdout, clients),
+        _read_stream(foxdot_process.stderr, clients, is_stderr=True),
+    )
 
 
 async def main():
