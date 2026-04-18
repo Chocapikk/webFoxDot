@@ -148,6 +148,27 @@ export const foxdotAutocomplete = {
         { text: 'drive=', displayText: 'drive' },
     ],
 
+    withRender: function(items) {
+        const self = this;
+        return items.map(item => item.description
+            ? { ...item, render: (el, data, cur) => self.renderHint(el, data, cur) }
+            : item
+        );
+    },
+
+    renderHint: function(element, _data, cur) {
+        const name = document.createElement('span');
+        name.className = 'hint-name';
+        name.textContent = cur.displayText;
+        element.appendChild(name);
+        if (cur.description) {
+            const desc = document.createElement('span');
+            desc.className = 'hint-description';
+            desc.textContent = cur.description;
+            element.appendChild(desc);
+        }
+    },
+
     hint: function(cm, CodeMirror) {
         const cursor = cm.getCursor();
         const token = cm.getTokenAt(cursor);
@@ -202,7 +223,7 @@ export const foxdotAutocomplete = {
             const prefix = token.string.slice(0, cursorPosition - token.start).replace(/[^a-zA-Z:]/g, "");
             let foxdotKeyword = [];
             if (prefix.startsWith('x')) {
-                foxdotKeyword = this.fxList.filter(f => f.displayText.toLowerCase().startsWith(prefix.slice(1,).toLowerCase()));;
+                foxdotKeyword = this.withRender(this.fxList.filter(f => f.displayText.toLowerCase().startsWith(prefix.slice(1,).toLowerCase())));
             }
             else {
                 const combinedKeyword = [...this.foxKeyword, ...this.patternFunction];
@@ -224,7 +245,7 @@ export const foxdotAutocomplete = {
             };
         }
         else if (matchPlayer) {
-            const filteredSynths = this.synths.filter(synth => synth.displayText.includes(token.string));
+            const filteredSynths = this.withRender(this.synths.filter(synth => synth.displayText.includes(token.string)));
             const synthMatch = line.match(/>>\s*([a-zA-Z0-9_]+)\(/);
             if (synthMatch) {
                 const synthWithoutUndescore = filteredSynths.filter(synth => !synth.displayText.endsWith("_"));
